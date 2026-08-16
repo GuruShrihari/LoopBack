@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+pydantic[email]
+pydantic-settings
+psycopg2-binary
+asyncpg
+alembic
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
