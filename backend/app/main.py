@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth
+from app.routers import auth, company, job
 
 app = FastAPI(title="Recruitment API - Lean Edition")
 
@@ -14,6 +14,8 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(company.router, prefix="/companies", tags=["companies"])
+app.include_router(job.router, prefix="/jobs", tags=["jobs"])
 
 @app.get("/health")
 def health_check():
