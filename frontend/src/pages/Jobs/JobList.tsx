@@ -4,6 +4,7 @@ import type { JobPosting } from '../../api/job';
 import { getJobs, createJob } from '../../api/job';
 import type { Company } from '../../api/company';
 import { getCompanies } from '../../api/company';
+import { applyToJob } from '../../api/application';
 import { useAuthStore } from '../../store/authStore';
 import { Briefcase, Plus, MapPin, DollarSign, Clock, Search } from 'lucide-react';
 
@@ -62,6 +63,15 @@ export const JobList = () => {
 
   const getCompanyName = (id: string) => {
     return companies.find(c => c.id === id)?.name || 'Unknown Company';
+  };
+
+  const handleApply = async (jobId: string) => {
+    try {
+      await applyToJob(jobId);
+      alert("Successfully applied to this position!");
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Failed to apply");
+    }
   };
 
   return (
@@ -124,12 +134,23 @@ export const JobList = () => {
               </div>
             </div>
             
-            <div className="flex flex-wrap gap-2 md:max-w-[30%]">
-              {job.tags.slice(0, 4).map(tag => (
-                <span key={tag} className="px-3 py-1 bg-gray-800 text-gray-300 text-xs rounded-lg border border-gray-700">
-                  {tag}
-                </span>
-              ))}
+            <div className="flex flex-col gap-4 md:items-end md:max-w-[30%]">
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                {job.tags.slice(0, 4).map(tag => (
+                  <span key={tag} className="px-3 py-1 bg-gray-800 text-gray-300 text-xs rounded-lg border border-gray-700">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              
+              {user?.role === 'candidate' && (
+                <button 
+                  onClick={() => handleApply(job.id)}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-medium transition-colors shadow-lg shadow-indigo-500/20 w-full md:w-auto"
+                >
+                  Apply Now
+                </button>
+              )}
             </div>
           </div>
         ))}

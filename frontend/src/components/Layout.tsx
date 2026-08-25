@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { LogOut, LayoutDashboard, Briefcase, Building2 } from 'lucide-react';
+import { LogOut, LayoutDashboard, Briefcase, Building2, FileText } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 export const Layout = ({ children }: { children: ReactNode }) => {
@@ -18,6 +18,10 @@ export const Layout = ({ children }: { children: ReactNode }) => {
     { name: 'Jobs', path: '/jobs', icon: Briefcase },
     { name: 'Companies', path: '/companies', icon: Building2 },
   ];
+
+  if (user?.role === 'candidate') {
+    navItems.push({ name: 'My Apps', path: '/applications', icon: FileText });
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
