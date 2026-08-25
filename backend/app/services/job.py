@@ -20,5 +20,12 @@ def get_jobs(session: Session) -> list[JobPosting]:
     # In the future, this can be filtered by active status, tags, etc.
     return session.exec(select(JobPosting).order_by(JobPosting.created_at.desc())).all()
 
+def get_my_jobs(session: Session, user_id: UUID) -> list[JobPosting]:
+    return session.exec(
+        select(JobPosting)
+        .where(JobPosting.posted_by_user_id == user_id)
+        .order_by(JobPosting.created_at.desc())
+    ).all()
+
 def get_job(session: Session, job_id: UUID) -> JobPosting | None:
     return session.get(JobPosting, job_id)

@@ -21,6 +21,12 @@ def create_job(
 def read_jobs(session: SessionDep) -> list[JobPostingRead]:
     return job_service.get_jobs(session=session)
 
+@router.get("/me", response_model=list[JobPostingRead])
+def read_my_jobs(session: SessionDep, current_user: CurrentUser) -> list[JobPostingRead]:
+    if current_user.role != UserRole.RECRUITER:
+        raise HTTPException(status_code=403, detail="Only recruiters have posted jobs.")
+    return job_service.get_my_jobs(session=session, user_id=current_user.id)
+
 @router.get("/{job_id}", response_model=JobPostingRead)
 def read_job(session: SessionDep, job_id: UUID) -> JobPostingRead:
     job = job_service.get_job(session=session, job_id=job_id)

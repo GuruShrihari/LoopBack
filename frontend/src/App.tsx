@@ -5,6 +5,8 @@ import { Dashboard } from './pages/Dashboard';
 import { CompanyList } from './pages/Companies/CompanyList';
 import { JobList } from './pages/Jobs/JobList';
 import { ApplicationList } from './pages/Applications/ApplicationList';
+import { ATSList } from './pages/ATS/ATSList';
+import { ATSDashboard } from './pages/ATS/ATSDashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 
@@ -30,6 +32,8 @@ function App() {
           <Route path="/companies" element={<CompanyList />} />
           <Route path="/jobs" element={<JobList />} />
           <Route path="/applications" element={<ApplicationList />} />
+          <Route path="/ats" element={<ATSList />} />
+          <Route path="/ats/:jobId" element={<ATSDashboard />} />
         </Route>
 
         {/* Fallback */}

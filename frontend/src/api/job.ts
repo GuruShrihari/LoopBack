@@ -21,6 +21,11 @@ export const getJobs = async (): Promise<JobPosting[]> => {
   return response.data;
 };
 
+export const getMyJobs = async (): Promise<JobPosting[]> => {
+  const response = await apiClient.get('/jobs/me');
+  return response.data;
+};
+
 export const createJob = async (jobData: Partial<JobPosting>): Promise<JobPosting> => {
   const response = await apiClient.post('/jobs/', jobData);
   return response.data;
