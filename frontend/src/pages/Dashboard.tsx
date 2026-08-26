@@ -19,9 +19,9 @@ export const Dashboard = () => {
           const apps = await getMyApplications();
           let active = 0, interviews = 0, offers = 0;
           apps.forEach(app => {
-            if (['applied', 'screening'].includes(app.status)) active++;
-            if (app.status === 'interviewing') interviews++;
-            if (app.status === 'offered') offers++;
+            if (['APPLIED', 'SCREENING'].includes(app.status)) active++;
+            if (app.status === 'INTERVIEWING') interviews++;
+            if (app.status === 'OFFERED') offers++;
           });
           setStats({ active, interviews, offers });
         } catch (err) {
@@ -34,23 +34,23 @@ export const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-gray-400">Welcome to LoopBack. Your recruitment data lives here.</p>
+      <div className="animate-fade-up" style={{ marginBottom: 32 }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em' }}>Dashboard</h1>
+        <p style={{ margin: '6px 0 0', color: '#737373', fontSize: 14 }}>Welcome to LoopBack. Your recruitment data lives here.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500/30 transition-colors group">
-          <h3 className="text-lg font-medium mb-1 text-gray-300">Active Applications</h3>
-          <p className="text-3xl font-bold text-indigo-400 group-hover:scale-105 transform origin-left transition-transform">{stats.active}</p>
+      <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+        <div className="card animate-fade-up" style={{ padding: 24 }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 500, color: '#737373', textTransform: 'uppercase', letterSpacing: '.04em' }}>Active Applications</h3>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: '#fff' }}>{stats.active}</p>
         </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500/30 transition-colors group">
-          <h3 className="text-lg font-medium mb-1 text-gray-300">Interviews Scheduled</h3>
-          <p className="text-3xl font-bold text-indigo-400 group-hover:scale-105 transform origin-left transition-transform">{stats.interviews}</p>
+        <div className="card animate-fade-up" style={{ padding: 24 }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 500, color: '#737373', textTransform: 'uppercase', letterSpacing: '.04em' }}>Interviews Scheduled</h3>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: '#fff' }}>{stats.interviews}</p>
         </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500/30 transition-colors group">
-          <h3 className="text-lg font-medium mb-1 text-gray-300">Offers Received</h3>
-          <p className="text-3xl font-bold text-indigo-400 group-hover:scale-105 transform origin-left transition-transform">{stats.offers}</p>
+        <div className="card animate-fade-up" style={{ padding: 24 }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 500, color: '#737373', textTransform: 'uppercase', letterSpacing: '.04em' }}>Offers Received</h3>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: '#fff' }}>{stats.offers}</p>
         </div>
       </div>
     </Layout>

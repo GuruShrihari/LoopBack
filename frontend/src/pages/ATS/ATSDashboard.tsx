@@ -3,143 +3,230 @@ import { Layout } from '../../components/Layout';
 import { useParams, Link } from 'react-router-dom';
 import type { Application } from '../../api/application';
 import { getJobApplications, updateApplicationStatus } from '../../api/application';
-import { ChevronLeft, FileText, Clock, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, User } from 'lucide-react';
 
-const STATUSES = ['applied', 'screening', 'interviewing', 'offered', 'rejected'];
+// Must match backend ApplicationStatus enum values exactly (PostgreSQL stores uppercase labels)
+const STATUSES = ['APPLIED', 'SCREENING', 'INTERVIEWING', 'OFFERED', 'REJECTED', 'WITHDRAWN'];
+
+const STATUS_LABEL: Record<string, string> = {
+  APPLIED:      'Applied',
+  SCREENING:    'Screening',
+  INTERVIEWING: 'Interviewing',
+  OFFERED:      'Offered',
+  REJECTED:     'Rejected',
+  WITHDRAWN:    'Withdrawn',
+};
+
+const STATUS_STYLE: Record<string, React.CSSProperties> = {
+  APPLIED:      { background: 'rgba(255,255,255,.06)', color: '#a3a3a3', border: '1px solid #2a2a2a' },
+  SCREENING:    { background: 'rgba(255,255,255,.08)', color: '#d4d4d4', border: '1px solid #3a3a3a' },
+  INTERVIEWING: { background: 'rgba(255,255,255,.12)', color: '#fff',    border: '1px solid #555' },
+  OFFERED:      { background: 'rgba(255,255,255,.16)', color: '#fff',    border: '1px solid #888' },
+  REJECTED:     { background: 'rgba(80,0,0,.4)',       color: '#f87171', border: '1px solid #7f1d1d' },
+  WITHDRAWN:    { background: 'rgba(255,255,255,.04)', color: '#525252', border: '1px solid #1c1c1c' },
+};
+
+const formatDate = (d: string) =>
+  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export const ATSDashboard = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   const fetchApps = async () => {
     if (!jobId) return;
+    setError('');
     try {
       const data = await getJobApplications(jobId);
       setApplications(data);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to load applications');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchApps();
-  }, [jobId]);
+  useEffect(() => { fetchApps(); }, [jobId]);
 
   const handleStatusChange = async (appId: string, newStatus: string) => {
+    setUpdating(appId);
     try {
       await updateApplicationStatus(appId, newStatus);
-      // Optimistically update UI
-      setApplications(prev => prev.map(app => 
-        app.id === appId ? { ...app, status: newStatus } : app
-      ));
-    } catch (err) {
-      alert("Failed to update status");
-      // Refetch on error to sync state
-      fetchApps();
+      setApplications(prev =>
+        prev.map(app => app.id === appId ? { ...app, status: newStatus } : app)
+      );
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update status');
+    } finally {
+      setUpdating(null);
     }
   };
-
-  // Group applications by status for Kanban view
-  const appsByStatus = STATUSES.reduce((acc, status) => {
-    acc[status] = applications.filter(a => a.status === status);
-    return acc;
-  }, {} as Record<string, Application[]>);
-
-  const getStatusIcon = (status: string) => {
-    switch(status) {
-      case 'applied': return <FileText className="w-4 h-4 text-blue-400" />;
-      case 'screening': return <Clock className="w-4 h-4 text-purple-400" />;
-      case 'interviewing': return <Calendar className="w-4 h-4 text-yellow-400" />;
-      case 'offered': return <CheckCircle className="w-4 h-4 text-emerald-400" />;
-      case 'rejected': return <XCircle className="w-4 h-4 text-red-400" />;
-      default: return null;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'applied': return 'border-t-blue-500';
-      case 'screening': return 'border-t-purple-500';
-      case 'interviewing': return 'border-t-yellow-500';
-      case 'offered': return 'border-t-emerald-500';
-      case 'rejected': return 'border-t-red-500';
-      default: return 'border-t-gray-500';
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-        </div>
-      </Layout>
-    );
-  }
 
   const jobTitle = applications.length > 0 ? applications[0].job_title : 'Job Posting';
+  const companyName = applications.length > 0 ? applications[0].company_name : '';
+
+  const StatusBadge = ({ status }: { status: string }) => (
+    <span style={{
+      ...STATUS_STYLE[status] ?? STATUS_STYLE['applied'],
+      display: 'inline-block',
+      padding: '3px 10px', borderRadius: 99,
+      fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+      textTransform: 'uppercase',
+    }}>
+      {STATUS_LABEL[status] ?? status}
+    </span>
+  );
 
   return (
     <Layout>
-      <div className="mb-8">
-        <Link to="/ats" className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 mb-4 w-max transition-colors">
-          <ChevronLeft className="w-4 h-4" />
-          Back to ATS List
+      {/* Header */}
+      <div className="animate-fade-up" style={{ marginBottom: 32 }}>
+        <Link to="/ats" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          fontSize: 13, color: '#525252', textDecoration: 'none', marginBottom: 16,
+          transition: 'color .15s',
+        }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#525252')}
+        >
+          <ChevronLeft size={14} /> Back to ATS
         </Link>
-        <h1 className="text-3xl font-bold mb-2">Applicants: {jobTitle}</h1>
-        <p className="text-gray-400">Total Applicants: {applications.length}</p>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em' }}>{jobTitle}</h1>
+            {companyName && <p style={{ margin: '4px 0 0', color: '#737373', fontSize: 14 }}>{companyName}</p>}
+          </div>
+          <div style={{
+            padding: '6px 14px', borderRadius: 8,
+            background: '#0a0a0a', border: '1px solid #1a1a1a',
+            fontSize: 13, color: '#a3a3a3',
+          }}>
+            {applications.length} applicant{applications.length !== 1 ? 's' : ''}
+          </div>
+        </div>
       </div>
 
-      {applications.length === 0 ? (
-        <div className="py-12 text-center text-gray-500 bg-gray-900 border border-gray-800 rounded-2xl">
-          No one has applied to this position yet. Check back later!
+      {error && (
+        <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 8, background: 'rgba(80,0,0,.3)', border: '1px solid #7f1d1d', color: '#f87171', fontSize: 13 }}>
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+          <div className="spinner" />
+        </div>
+      ) : applications.length === 0 ? (
+        <div className="card animate-fade-up" style={{ padding: '64px 24px', textAlign: 'center', color: '#525252' }}>
+          <User size={32} style={{ opacity: .3, marginBottom: 12 }} />
+          <p style={{ margin: 0, fontSize: 15 }}>No applicants yet</p>
+          <p style={{ margin: '6px 0 0', fontSize: 13 }}>Share the job posting to start receiving applications.</p>
         </div>
       ) : (
-        <div className="flex gap-6 overflow-x-auto pb-4 min-h-[500px]">
-          {STATUSES.map(status => (
-            <div key={status} className={`flex-shrink-0 w-80 bg-gray-900 border border-gray-800 border-t-4 ${getStatusColor(status)} rounded-2xl flex flex-col`}>
-              <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-                <div className="flex items-center gap-2 font-semibold text-gray-200 capitalize">
-                  {getStatusIcon(status)}
-                  {status}
-                </div>
-                <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-full font-medium">
-                  {appsByStatus[status].length}
-                </span>
-              </div>
-              
-              <div className="p-4 flex-1 flex flex-col gap-4 overflow-y-auto">
-                {appsByStatus[status].map(app => (
-                  <div key={app.id} className="bg-gray-950 border border-gray-800 rounded-xl p-4 shadow-sm hover:border-gray-700 transition-colors">
-                    <div className="font-medium text-white mb-1 flex items-center justify-between">
-                      Applicant
-                      <span className="text-xs text-gray-500" title={app.id}>
-                        ...{app.id.slice(-4)}
+        <div className="animate-fade-up" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+                {['Applicant', 'Applied', 'Cover Note', 'Status', 'Move to'].map(h => (
+                  <th key={h} style={{
+                    padding: '10px 16px', textAlign: 'left',
+                    color: '#525252', fontWeight: 500, fontSize: 12,
+                    letterSpacing: '.06em', textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {applications.map((app, idx) => (
+                <tr
+                  key={app.id}
+                  className="animate-fade-up"
+                  style={{
+                    borderBottom: '1px solid #0f0f0f',
+                    animationDelay: `${idx * 40}ms`,
+                    transition: 'background .15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#0a0a0a')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  {/* Applicant */}
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: '50%',
+                        background: '#1a1a1a', border: '1px solid #2a2a2a',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, color: '#737373', fontWeight: 600, flexShrink: 0,
+                      }}>
+                        {app.id.slice(-2).toUpperCase()}
+                      </div>
+                      <span style={{ color: '#d4d4d4', fontFamily: 'monospace', fontSize: 12 }}>
+                        ···{app.id.slice(-8)}
                       </span>
                     </div>
-                    {app.cover_note && (
-                      <p className="text-sm text-gray-400 line-clamp-3 mb-4 italic">"{app.cover_note}"</p>
+                  </td>
+                  {/* Applied */}
+                  <td style={{ padding: '14px 16px', color: '#737373', whiteSpace: 'nowrap' }}>
+                    {formatDate(app.applied_at)}
+                  </td>
+                  {/* Cover Note */}
+                  <td style={{ padding: '14px 16px', color: '#737373', maxWidth: 260 }}>
+                    {app.cover_note ? (
+                      <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {app.cover_note}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#2a2a2a' }}>—</span>
                     )}
-                    
-                    <div className="mt-4 pt-3 border-t border-gray-800">
-                      <select 
-                        className="w-full bg-gray-900 text-sm text-gray-300 border border-gray-700 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 outline-none"
+                  </td>
+                  {/* Current Status */}
+                  <td style={{ padding: '14px 16px' }}>
+                    <StatusBadge status={app.status} />
+                  </td>
+                  {/* Move to select */}
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                      <select
+                        disabled={updating === app.id}
                         value={app.status}
-                        onChange={(e) => handleStatusChange(app.id, e.target.value)}
+                        onChange={e => handleStatusChange(app.id, e.target.value)}
+                        style={{
+                          background: '#0a0a0a', color: '#d4d4d4',
+                          border: '1px solid #262626', borderRadius: 7,
+                          padding: '6px 12px', fontSize: 13, cursor: 'pointer',
+                          outline: 'none', appearance: 'none',
+                          paddingRight: 28,
+                          opacity: updating === app.id ? .5 : 1,
+                          transition: 'border-color .15s',
+                          minWidth: 150,
+                        }}
                       >
                         {STATUSES.map(s => (
-                          <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                          <option key={s} value={s}>{STATUS_LABEL[s]}</option>
                         ))}
                       </select>
+                      <div style={{
+                        position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                        pointerEvents: 'none', color: '#525252', fontSize: 10,
+                      }}>▼</div>
+                      {updating === app.id && (
+                        <div style={{
+                          position: 'absolute', right: -24, top: '50%', transform: 'translateY(-50%)',
+                          width: 14, height: 14, border: '2px solid #333', borderTopColor: '#fff',
+                          borderRadius: '50%', animation: 'spin .7s linear infinite',
+                        }} />
+                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </Layout>

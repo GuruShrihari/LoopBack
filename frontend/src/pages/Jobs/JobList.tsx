@@ -6,10 +6,17 @@ import type { Company } from '../../api/company';
 import { getCompanies } from '../../api/company';
 import { applyToJob } from '../../api/application';
 import { useAuthStore } from '../../store/authStore';
-import { Briefcase, Plus, MapPin, DollarSign, Clock, Search } from 'lucide-react';
+import { Plus, MapPin, DollarSign, X } from 'lucide-react';
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+const fmtSalary = (min?: number, max?: number) => {
+  if (!min && !max) return null;
+  const f = (v: number) => `$${(v / 1000).toFixed(0)}k`;
+  if (min && max) return `${f(min)} – ${f(max)}`;
+  if (min) return `From ${f(min)}`;
+  return `Up to ${f(max!)}`;
 };
 
 export const JobList = () => {
@@ -17,34 +24,23 @@ export const JobList = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [applyingId, setApplyingId] = useState<string | null>(null);
   const [newJob, setNewJob] = useState<Partial<JobPosting>>({
-    title: '',
-    description: '',
-    company_id: '',
-    location: '',
-    is_remote: false,
-    salary_min: undefined,
-    salary_max: undefined,
-    tags: []
+    title: '', description: '', company_id: '', location: '',
+    is_remote: false, salary_min: undefined, salary_max: undefined, tags: [],
   });
   const [tagInput, setTagInput] = useState('');
-  
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore(s => s.user);
 
   const fetchData = async () => {
     try {
       const [jobsData, compsData] = await Promise.all([getJobs(), getCompanies()]);
       setJobs(jobsData);
       setCompanies(compsData);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,223 +50,234 @@ export const JobList = () => {
       setShowModal(false);
       setNewJob({ title: '', description: '', company_id: '', location: '', is_remote: false, tags: [] });
       fetchData();
-    } catch (err) {
-      alert("Failed to create job");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const getCompanyName = (id: string) => {
-    return companies.find(c => c.id === id)?.name || 'Unknown Company';
+    } catch { alert('Failed to create job'); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleApply = async (jobId: string) => {
+    setApplyingId(jobId);
     try {
       await applyToJob(jobId);
-      alert("Successfully applied to this position!");
+      alert('Successfully applied!');
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to apply");
-    }
+      alert(err.response?.data?.detail || 'Failed to apply');
+    } finally { setApplyingId(null); }
+  };
+
+  const getCompanyName = (id: string) =>
+    companies.find(c => c.id === id)?.name || 'Unknown';
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', background: '#000', color: '#fff',
+    border: '1px solid #262626', borderRadius: 8,
+    padding: '10px 14px', fontSize: 13, outline: 'none',
   };
 
   return (
     <Layout>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+      {/* Page header */}
+      <div className="animate-fade-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="text-3xl font-bold mb-2">Job Board</h1>
-          <p className="text-gray-400">Find and apply to positions tracked by LoopBack.</p>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em' }}>Job Board</h1>
+          <p style={{ margin: '6px 0 0', color: '#737373', fontSize: 14 }}>Browse and apply to open positions.</p>
         </div>
         {user?.role === 'recruiter' && (
-          <button 
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-medium transition-colors shadow-lg shadow-indigo-500/20 whitespace-nowrap"
-          >
-            <Plus className="w-5 h-5" />
-            Post New Job
+          <button className="btn-primary" onClick={() => setShowModal(true)}>
+            <Plus size={15} /> Post Job
           </button>
         )}
       </div>
 
-      <div className="flex flex-col gap-4">
-        {jobs.map((job) => (
-          <div key={job.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition-colors shadow-lg group flex flex-col md:flex-row gap-6 items-start md:items-center">
-            
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-xl font-semibold text-white group-hover:text-indigo-400 transition-colors">
-                  {job.title}
-                </h3>
-                {job.is_remote && (
-                  <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-xs font-medium rounded-full border border-emerald-500/20">
-                    Remote
-                  </span>
-                )}
-              </div>
-              
-              <div className="text-lg text-gray-300 font-medium mb-4">
-                {getCompanyName(job.company_id)}
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                {job.location && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" />
-                    {job.location}
+      {/* Job list */}
+      {jobs.length === 0 ? (
+        <div className="card animate-fade-up" style={{ padding: '64px 24px', textAlign: 'center', color: '#525252' }}>
+          No jobs found. Check back later!
+        </div>
+      ) : (
+        <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {jobs.map((job) => {
+            const salary = fmtSalary(job.salary_min, job.salary_max);
+            return (
+              <div
+                key={job.id}
+                className="card animate-fade-up"
+                style={{
+                  padding: '20px 24px',
+                  borderRadius: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: 16, flexWrap: 'wrap',
+                  marginBottom: 4,
+                }}
+              >
+                {/* Left: title + meta */}
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{job.title}</span>
+                    {job.is_remote && (
+                      <span style={{
+                        padding: '2px 8px', borderRadius: 4,
+                        background: '#1a1a1a', color: '#737373',
+                        fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+                      }}>REMOTE</span>
+                    )}
                   </div>
-                )}
-                {(job.salary_min || job.salary_max) && (
-                  <div className="flex items-center gap-1.5">
-                    <DollarSign className="w-4 h-4" />
-                    {job.salary_min ? `$${(job.salary_min/1000).toFixed(0)}k` : ''} 
-                    {job.salary_min && job.salary_max ? ' - ' : ''}
-                    {job.salary_max ? `$${(job.salary_max/1000).toFixed(0)}k` : ''}
+                  <div style={{ color: '#737373', fontSize: 13, marginBottom: 10, fontWeight: 500 }}>
+                    {getCompanyName(job.company_id)}
                   </div>
-                )}
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4" />
-                  {formatDate(job.created_at)}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    {job.location && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#525252', fontSize: 12 }}>
+                        <MapPin size={11} /> {job.location}
+                      </span>
+                    )}
+                    {salary && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#525252', fontSize: 12 }}>
+                        <DollarSign size={11} /> {salary}
+                      </span>
+                    )}
+                    <span style={{ color: '#2a2a2a', fontSize: 12 }}>
+                      {fmtDate(job.created_at)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-4 md:items-end md:max-w-[30%]">
-              <div className="flex flex-wrap gap-2 md:justify-end">
-                {job.tags.slice(0, 4).map(tag => (
-                  <span key={tag} className="px-3 py-1 bg-gray-800 text-gray-300 text-xs rounded-lg border border-gray-700">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              
-              {user?.role === 'candidate' && (
-                <button 
-                  onClick={() => handleApply(job.id)}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-medium transition-colors shadow-lg shadow-indigo-500/20 w-full md:w-auto"
-                >
-                  Apply Now
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-        
-        {jobs.length === 0 && (
-          <div className="py-12 text-center text-gray-500 bg-gray-900 border border-gray-800 rounded-2xl">
-            No active jobs found. Check back later!
-          </div>
-        )}
-      </div>
 
-      {/* Modal */}
+                {/* Right: tags + apply */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  {job.tags?.slice(0, 3).map(tag => (
+                    <span key={tag} style={{
+                      padding: '3px 10px', borderRadius: 5,
+                      background: '#0a0a0a', border: '1px solid #1a1a1a',
+                      color: '#737373', fontSize: 12,
+                    }}>{tag}</span>
+                  ))}
+                  {user?.role === 'candidate' && (
+                    <button
+                      disabled={applyingId === job.id}
+                      onClick={() => handleApply(job.id)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        padding: '8px 18px', borderRadius: 7,
+                        background: applyingId === job.id ? '#1a1a1a' : '#fff',
+                        color: applyingId === job.id ? '#525252' : '#000',
+                        border: 'none', fontWeight: 600, fontSize: 13,
+                        cursor: applyingId === job.id ? 'not-allowed' : 'pointer',
+                        transition: 'opacity .15s',
+                      }}
+                    >
+                      {applyingId === job.id ? 'Applying…' : 'Apply'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Post Job Modal ───────────────────────────────────────── */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-2xl shadow-2xl my-8">
-            <h2 className="text-2xl font-bold mb-6 text-white">Post a New Job</h2>
-            <form onSubmit={handleCreate} className="space-y-5">
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 24, overflowY: 'auto',
+        }}
+          onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}
+        >
+          <div className="animate-fade-up" style={{
+            background: '#0a0a0a', border: '1px solid #1a1a1a', borderRadius: 14,
+            padding: 28, width: '100%', maxWidth: 560, margin: 'auto',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Post a New Job</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#525252', padding: 4 }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Job Title</label>
-                  <input 
-                    type="text" required
-                    value={newJob.title}
-                    onChange={e => setNewJob({ ...newJob, title: e.target.value })}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  />
+                  <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>Job Title *</label>
+                  <input required style={inputStyle} value={newJob.title}
+                    onChange={e => setNewJob({ ...newJob, title: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Company</label>
+                  <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>Company *</label>
                   {companies.length === 0 ? (
-                    <div className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-orange-400 text-sm flex items-center justify-between">
-                      <span>No companies exist yet!</span>
-                      <a href="/companies" className="text-indigo-400 hover:text-indigo-300 underline">Add one first</a>
+                    <div style={{ ...inputStyle, color: '#737373', fontSize: 12 }}>
+                      <a href="/companies" style={{ color: '#a3a3a3' }}>Add a company first →</a>
                     </div>
                   ) : (
-                    <select 
-                      required
+                    <select required style={{ ...inputStyle, appearance: 'none' }}
                       value={newJob.company_id}
-                      onChange={e => setNewJob({ ...newJob, company_id: e.target.value })}
-                      className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none"
-                    >
-                      <option value="" disabled>Select a company...</option>
-                      {companies.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
+                      onChange={e => setNewJob({ ...newJob, company_id: e.target.value })}>
+                      <option value="" disabled>Select…</option>
+                      {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Job Description</label>
-                <textarea 
-                  required rows={4}
+                <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>Description *</label>
+                <textarea required rows={4} style={{ ...inputStyle, resize: 'none' }}
                   value={newJob.description}
-                  onChange={e => setNewJob({ ...newJob, description: e.target.value })}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
-                />
+                  onChange={e => setNewJob({ ...newJob, description: e.target.value })} />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>
-                  <input 
-                    type="text"
+                  <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>Location</label>
+                  <input style={inputStyle} placeholder="e.g. New York, NY"
                     value={newJob.location}
-                    onChange={e => setNewJob({ ...newJob, location: e.target.value })}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="e.g. San Francisco, CA"
-                  />
+                    onChange={e => setNewJob({ ...newJob, location: e.target.value })} />
                 </div>
-                <div className="flex items-center mt-6">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input 
-                      type="checkbox"
-                      checked={newJob.is_remote}
+                <div style={{ display: 'flex', alignItems: 'center', paddingTop: 22 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#d4d4d4' }}>
+                    <input type="checkbox" checked={newJob.is_remote}
                       onChange={e => setNewJob({ ...newJob, is_remote: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-800 text-indigo-600 focus:ring-indigo-500 bg-gray-950"
-                    />
-                    <span className="text-sm font-medium text-gray-300">Remote Position</span>
+                      style={{ width: 15, height: 15 }} />
+                    Remote position
                   </label>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Min Salary (USD)</label>
-                  <input 
-                    type="number"
+                  <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>Min Salary (USD)</label>
+                  <input type="number" style={inputStyle}
                     value={newJob.salary_min || ''}
-                    onChange={e => setNewJob({ ...newJob, salary_min: parseInt(e.target.value) || undefined })}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  />
+                    onChange={e => setNewJob({ ...newJob, salary_min: parseInt(e.target.value) || undefined })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Max Salary (USD)</label>
-                  <input 
-                    type="number"
+                  <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>Max Salary (USD)</label>
+                  <input type="number" style={inputStyle}
                     value={newJob.salary_max || ''}
-                    onChange={e => setNewJob({ ...newJob, salary_max: parseInt(e.target.value) || undefined })}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  />
+                    onChange={e => setNewJob({ ...newJob, salary_max: parseInt(e.target.value) || undefined })} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Tags (Press Enter)</label>
-                <div className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-indigo-500 transition-all flex flex-wrap gap-2">
+                <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>Tags (press Enter)</label>
+                <div style={{ ...inputStyle, display: 'flex', flexWrap: 'wrap', gap: 6, minHeight: 44 }}>
                   {newJob.tags?.map(tag => (
-                    <span key={tag} className="flex items-center gap-1 bg-indigo-600/20 text-indigo-400 px-2 py-1 rounded text-sm border border-indigo-500/20">
+                    <span key={tag} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      padding: '2px 8px', borderRadius: 4,
+                      background: '#1a1a1a', border: '1px solid #2a2a2a',
+                      color: '#d4d4d4', fontSize: 12,
+                    }}>
                       {tag}
-                      <button type="button" onClick={() => setNewJob({...newJob, tags: newJob.tags?.filter(t => t !== tag)})} className="hover:text-white">&times;</button>
+                      <button type="button" onClick={() => setNewJob({ ...newJob, tags: newJob.tags?.filter(t => t !== tag) })}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#525252', padding: 0, fontSize: 13, lineHeight: 1 }}>×</button>
                     </span>
                   ))}
-                  <input 
-                    type="text"
-                    value={tagInput}
+                  <input type="text" value={tagInput}
+                    style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 13, flex: 1, minWidth: 80 }}
+                    placeholder="e.g. React"
                     onChange={e => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
+                    onKeyDown={e => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         if (tagInput.trim() && !newJob.tags?.includes(tagInput.trim())) {
@@ -278,19 +285,16 @@ export const JobList = () => {
                           setTagInput('');
                         }
                       }
-                    }}
-                    className="flex-1 bg-transparent text-white outline-none min-w-[100px]"
-                    placeholder="e.g. React, Python"
-                  />
+                    }} />
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-8 pt-4 border-t border-gray-800">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 px-4 rounded-xl border border-gray-800 text-gray-300 hover:bg-gray-800 transition-colors font-medium">
-                  Cancel
-                </button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors disabled:opacity-50 font-medium">
-                  {isSubmitting ? 'Publishing...' : 'Publish Job'}
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button type="button" className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}
+                  disabled={isSubmitting}>
+                  {isSubmitting ? 'Publishing…' : 'Publish Job'}
                 </button>
               </div>
             </form>

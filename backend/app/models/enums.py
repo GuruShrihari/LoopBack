@@ -6,14 +6,14 @@ class UserRole(str, enum.Enum):
     BOTH = "both"
 
 class ApplicationStatus(str, enum.Enum):
-    APPLIED = "applied"
-    VIEWED = "viewed"
-    SCREENING = "screening"
-    INTERVIEW = "interview"
-    OFFER = "offer"
-    REJECTED = "rejected"
-    GHOSTED = "ghosted"
-    WITHDRAWN = "withdrawn"
+    APPLIED      = "APPLIED"
+    VIEWED       = "VIEWED"
+    SCREENING    = "SCREENING"
+    INTERVIEWING = "INTERVIEWING"
+    OFFERED      = "OFFERED"
+    REJECTED     = "REJECTED"
+    GHOSTED      = "GHOSTED"
+    WITHDRAWN    = "WITHDRAWN"
 
 class PostingStatus(str, enum.Enum):
     ACTIVE = "active"

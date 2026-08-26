@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { login, getMe } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
-import { Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -33,80 +32,62 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/20 via-gray-950 to-gray-950"></div>
-      
-      <div className="w-full max-w-md relative z-10">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Welcome Back</h1>
-          <p className="text-gray-400">Sign in to continue your journey.</p>
+    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div className="animate-fade-up" style={{ width: '100%', maxWidth: 360 }}>
+        
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{
+            width: 40, height: 40, margin: '0 auto 20px',
+            background: '#fff', borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 800, fontSize: 20, color: '#000', letterSpacing: '-0.04em'
+          }}>L</div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#fff', letterSpacing: '-0.03em' }}>Welcome Back</h1>
+          <p style={{ margin: '8px 0 0', color: '#737373', fontSize: 14 }}>Sign in to continue your journey.</p>
         </div>
 
-        <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-8 shadow-2xl">
-          {error && (
-            <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              {error}
-            </div>
-          )}
+        {error && (
+          <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 8, background: 'rgba(80,0,0,.4)', border: '1px solid #7f1d1d', color: '#f87171', fontSize: 13 }}>
+            {error}
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Email Address</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-500" />
-                </div>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-950/50 border border-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-white transition-all outline-none"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 8, fontWeight: 500 }}>Email Address</label>
+            <input
+              type="email" required
+              value={email} onChange={e => setEmail(e.target.value)}
+              className="input-base" placeholder="you@example.com"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Password</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-500" />
-                </div>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-950/50 border border-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-white transition-all outline-none"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 8, fontWeight: 500 }}>Password</label>
+            <input
+              type="password" required
+              value={password} onChange={e => setPassword(e.target.value)}
+              className="input-base" placeholder="••••••••"
+            />
+          </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </form>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn-primary"
+            style={{ width: '100%', justifyContent: 'center', padding: '12px 20px', marginTop: 8 }}
+          >
+            {isLoading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
 
-          <p className="mt-8 text-center text-sm text-gray-400">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-              Create one
-            </Link>
-          </p>
-        </div>
+        <p style={{ marginTop: 32, textAlign: 'center', fontSize: 13, color: '#737373' }}>
+          Don't have an account?{' '}
+          <Link to="/register" style={{ color: '#fff', fontWeight: 500, textDecoration: 'none' }}>
+            Create one
+          </Link>
+        </p>
+
       </div>
     </div>
   );

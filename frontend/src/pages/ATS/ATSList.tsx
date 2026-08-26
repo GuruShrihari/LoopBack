@@ -5,11 +5,10 @@ import { getMyJobs } from '../../api/job';
 import type { Company } from '../../api/company';
 import { getCompanies } from '../../api/company';
 import { Link } from 'react-router-dom';
-import { Users, Clock, MapPin, ChevronRight } from 'lucide-react';
+import { MapPin, Calendar, ArrowRight } from 'lucide-react';
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
+const formatDate = (d: string) =>
+  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export const ATSList = () => {
   const [jobs, setJobs] = useState<JobPosting[]>([]);
@@ -31,63 +30,95 @@ export const ATSList = () => {
     fetchData();
   }, []);
 
-  const getCompanyName = (id: string) => {
-    return companies.find(c => c.id === id)?.name || 'Unknown Company';
-  };
+  const getCompanyName = (id: string) =>
+    companies.find(c => c.id === id)?.name || 'Unknown Company';
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">ATS Dashboard</h1>
-        <p className="text-gray-400">Select a job posting to review applicants.</p>
+      <div className="animate-fade-up" style={{ marginBottom: 32 }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em' }}>ATS Dashboard</h1>
+        <p style={{ margin: '6px 0 0', color: '#737373', fontSize: 14 }}>Select a job to review and manage applicants.</p>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+          <div className="spinner" />
         </div>
       ) : jobs.length === 0 ? (
-        <div className="py-12 text-center text-gray-500 bg-gray-900 border border-gray-800 rounded-2xl">
-          You haven't posted any jobs yet. Head to the Job Board to post your first position!
+        <div className="card animate-fade-up" style={{ padding: '64px 24px', textAlign: 'center', color: '#525252' }}>
+          <p style={{ margin: 0, fontSize: 15 }}>You haven't posted any jobs yet.</p>
+          <p style={{ margin: '6px 0 0', fontSize: 13 }}>
+            <Link to="/jobs" style={{ color: '#d4d4d4' }}>Go to the Job Board →</Link>
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {jobs.map((job) => (
-            <Link 
-              key={job.id} 
-              to={`/ats/${job.id}`}
-              className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500/50 hover:bg-gray-800/50 transition-all shadow-lg flex flex-col h-full group"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-white mb-1 group-hover:text-indigo-400 transition-colors">
-                    {job.title}
-                  </h3>
-                  <div className="text-sm text-gray-400">
-                    {getCompanyName(job.company_id)}
-                  </div>
-                </div>
-                <ChevronRight className="text-gray-600 group-hover:text-indigo-400 transition-colors" />
-              </div>
-
-              <div className="mt-auto pt-4 border-t border-gray-800/50 flex flex-col gap-2 text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>Posted {formatDate(job.created_at)}</span>
-                </div>
-                {job.location && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{job.location} {job.is_remote ? '(Remote)' : ''}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 mt-2 text-indigo-400 font-medium">
-                  <Users className="w-4 h-4" />
-                  <span>Review Candidates</span>
-                </div>
-              </div>
-            </Link>
-          ))}
+        <div className="animate-fade-up" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+                {['Position', 'Company', 'Location', 'Posted', ''].map((h, i) => (
+                  <th key={i} style={{
+                    padding: '10px 16px', textAlign: 'left',
+                    color: '#525252', fontWeight: 500, fontSize: 12,
+                    letterSpacing: '.06em', textTransform: 'uppercase',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((job, idx) => (
+                <tr
+                  key={job.id}
+                  className="animate-fade-up"
+                  style={{ borderBottom: '1px solid #0f0f0f', animationDelay: `${idx * 40}ms`, transition: 'background .15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#0a0a0a')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ fontWeight: 600, color: '#fff', fontSize: 14 }}>{job.title}</div>
+                    {job.is_remote && (
+                      <span style={{
+                        display: 'inline-block', marginTop: 4,
+                        padding: '1px 8px', borderRadius: 4,
+                        background: '#1a1a1a', color: '#737373',
+                        fontSize: 11, fontWeight: 500,
+                      }}>Remote</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '16px', color: '#737373' }}>{getCompanyName(job.company_id)}</td>
+                  <td style={{ padding: '16px', color: '#525252' }}>
+                    {job.location ? (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <MapPin size={12} /> {job.location}
+                      </span>
+                    ) : '—'}
+                  </td>
+                  <td style={{ padding: '16px', color: '#525252', whiteSpace: 'nowrap' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Calendar size={12} /> {formatDate(job.created_at)}
+                    </span>
+                  </td>
+                  <td style={{ padding: '16px', textAlign: 'right' }}>
+                    <Link
+                      to={`/ats/${job.id}`}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '6px 14px', borderRadius: 7,
+                        background: '#0a0a0a', border: '1px solid #1a1a1a',
+                        color: '#d4d4d4', textDecoration: 'none',
+                        fontSize: 13, fontWeight: 500,
+                        transition: 'border-color .15s, color .15s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#333'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#1a1a1a'; (e.currentTarget as HTMLElement).style.color = '#d4d4d4'; }}
+                    >
+                      Review <ArrowRight size={12} />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </Layout>

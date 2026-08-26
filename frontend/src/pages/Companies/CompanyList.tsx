@@ -3,7 +3,7 @@ import { Layout } from '../../components/Layout';
 import type { Company } from '../../api/company';
 import { getCompanies, createCompany } from '../../api/company';
 import { useAuthStore } from '../../store/authStore';
-import { Building2, Plus, Globe, CheckCircle2 } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 export const CompanyList = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -43,100 +43,94 @@ export const CompanyList = () => {
 
   return (
     <Layout>
-      <div className="flex justify-between items-end mb-8">
+      <div className="animate-fade-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="text-3xl font-bold mb-2">Companies</h1>
-          <p className="text-gray-400">Discover companies and track their responsiveness.</p>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em' }}>Companies</h1>
+          <p style={{ margin: '6px 0 0', color: '#737373', fontSize: 14 }}>Discover companies and track their responsiveness.</p>
         </div>
         {user?.role === 'recruiter' && (
-          <button 
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-medium transition-colors shadow-lg shadow-indigo-500/20"
-          >
-            <Plus className="w-5 h-5" />
-            Add Company
+          <button className="btn-primary" onClick={() => setShowModal(true)}>
+            <Plus size={15} /> Add Company
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
         {companies.map((company) => (
-          <div key={company.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition-colors shadow-lg">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center shadow-inner">
-                  <Building2 className="w-6 h-6 text-gray-400" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                    {company.name}
-                    {company.is_verified && <CheckCircle2 className="w-4 h-4 text-emerald-500" title="Verified" />}
-                  </h3>
-                  {company.website && (
-                    <a href={company.website} target="_blank" rel="noreferrer" className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1 mt-1 transition-colors">
-                      <Globe className="w-3 h-3" /> Website
-                    </a>
+          <div key={company.id} className="card animate-fade-up" style={{ padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {company.name}
+                  {company.is_verified && (
+                    <span style={{ fontSize: 10, background: '#fff', color: '#000', padding: '2px 6px', borderRadius: 4, fontWeight: 700, letterSpacing: '.04em' }}>VERIFIED</span>
                   )}
-                </div>
+                </h3>
+                {company.website && (
+                  <a href={company.website} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#a3a3a3', textDecoration: 'none', display: 'inline-block', marginTop: 4 }}>
+                    {company.website.replace(/^https?:\/\//, '')}
+                  </a>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-800/50">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, paddingTop: 16, borderTop: '1px solid #1a1a1a' }}>
               <div>
-                <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wider">Ghosting Rate</p>
-                <p className="text-lg font-semibold text-white">
+                <p style={{ margin: '0 0 4px', fontSize: 11, color: '#525252', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '.04em' }}>Ghosting Rate</p>
+                <p style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#fff' }}>
                   {company.ghosting_rate !== null ? `${(company.ghosting_rate! * 100).toFixed(1)}%` : '--'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wider">Response Time</p>
-                <p className="text-lg font-semibold text-white">
+                <p style={{ margin: '0 0 4px', fontSize: 11, color: '#525252', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '.04em' }}>Response Time</p>
+                <p style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#fff' }}>
                   {company.median_response_hours ? `${company.median_response_hours}h` : '--'}
                 </p>
               </div>
             </div>
           </div>
         ))}
-
-        {companies.length === 0 && (
-          <div className="col-span-full py-12 text-center text-gray-500">
-            No companies found. Be the first to add one!
-          </div>
-        )}
       </div>
+
+      {companies.length === 0 && (
+        <div className="card animate-fade-up" style={{ padding: '64px 24px', textAlign: 'center', color: '#525252' }}>
+          No companies found. Be the first to add one!
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-2xl font-bold mb-4 text-white">Add Company</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 24,
+        }} onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
+          <div className="animate-fade-up" style={{
+            background: '#0a0a0a', border: '1px solid #1a1a1a', borderRadius: 14,
+            padding: 28, width: '100%', maxWidth: 400,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Add Company</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#525252', padding: 4 }}>
+                <X size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Company Name</label>
-                <input 
-                  type="text" required
-                  value={newCompany.name}
-                  onChange={e => setNewCompany({ ...newCompany, name: e.target.value })}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  placeholder="e.g. Acme Corp"
-                />
+                <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>Company Name</label>
+                <input required className="input-base" placeholder="e.g. Acme Corp"
+                  value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Website URL (Optional)</label>
-                <input 
-                  type="url"
-                  value={newCompany.website}
-                  onChange={e => setNewCompany({ ...newCompany, website: e.target.value })}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  placeholder="https://..."
-                />
+                <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>Website URL (Optional)</label>
+                <input type="url" className="input-base" placeholder="https://..."
+                  value={newCompany.website} onChange={e => setNewCompany({ ...newCompany, website: e.target.value })} />
               </div>
-              <div className="flex gap-3 mt-8">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 px-4 rounded-xl border border-gray-800 text-gray-300 hover:bg-gray-800 transition-colors font-medium">
-                  Cancel
-                </button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors disabled:opacity-50 font-medium">
-                  {isSubmitting ? 'Saving...' : 'Add Company'}
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button type="button" className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving…' : 'Add Company'}
                 </button>
               </div>
             </form>
