@@ -8,6 +8,7 @@ import { ApplicationList } from './pages/Applications/ApplicationList';
 import { ATSList } from './pages/ATS/ATSList';
 import { ATSDashboard } from './pages/ATS/ATSDashboard';
 import { IntelFeed } from './pages/Intel/IntelFeed';
+import { ReferralHub } from './pages/Referrals/ReferralHub';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 
@@ -36,6 +37,7 @@ function App() {
           <Route path="/ats" element={<ATSList />} />
           <Route path="/ats/:jobId" element={<ATSDashboard />} />
           <Route path="/intel" element={<IntelFeed />} />
+          <Route path="/referrals" element={<ReferralHub />} />
         </Route>
 
         {/* Fallback */}
