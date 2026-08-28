@@ -6,6 +6,7 @@ from .job import JobPosting, PrepBriefCache
 from .application import Application, InterviewIntel
 from .community import CommunityThread, CommunityPost
 from .notification import Notification
+from .referral import ReferralOffer, ReferralRequest
 
 __all__ = [
     "SQLModel",
@@ -23,4 +24,6 @@ __all__ = [
     "CommunityThread",
     "CommunityPost",
     "Notification",
+    "ReferralOffer",
+    "ReferralRequest",
 ]

@@ -1,6 +1,6 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { LogOut, LayoutDashboard, Briefcase, Building2, FileText, Users, ShieldCheck } from 'lucide-react';
+import { LogOut, LayoutDashboard, Briefcase, Building2, FileText, Users, ShieldCheck, UserCheck } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 export const Layout = ({ children }: { children: ReactNode }) => {
@@ -17,9 +17,9 @@ export const Layout = ({ children }: { children: ReactNode }) => {
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Jobs',      path: '/jobs',      icon: Briefcase },
     { name: 'Companies', path: '/companies', icon: Building2 },
+    { name: 'Referrals', path: '/referrals', icon: UserCheck },
     { name: 'Intel',     path: '/intel',     icon: ShieldCheck },
   ];
-
   if (user?.role === 'candidate') {
     navItems.push({ name: 'My Apps', path: '/applications', icon: FileText });
   }

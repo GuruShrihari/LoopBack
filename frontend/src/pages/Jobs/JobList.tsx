@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
 import type { JobPosting } from '../../api/job';
 import { getJobs, createJob } from '../../api/job';
@@ -141,7 +142,7 @@ export const JobList = () => {
                   </div>
                 </div>
 
-                {/* Right: tags + apply */}
+                {/* Right: tags + apply / referral */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   {job.tags?.slice(0, 3).map(tag => (
                     <span key={tag} style={{
@@ -151,21 +152,35 @@ export const JobList = () => {
                     }}>{tag}</span>
                   ))}
                   {user?.role === 'candidate' && (
-                    <button
-                      disabled={applyingId === job.id}
-                      onClick={() => handleApply(job.id)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center',
-                        padding: '8px 18px', borderRadius: 7,
-                        background: applyingId === job.id ? '#1a1a1a' : '#fff',
-                        color: applyingId === job.id ? '#525252' : '#000',
-                        border: 'none', fontWeight: 600, fontSize: 13,
-                        cursor: applyingId === job.id ? 'not-allowed' : 'pointer',
-                        transition: 'opacity .15s',
-                      }}
-                    >
-                      {applyingId === job.id ? 'Applying…' : 'Apply'}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Link
+                        to="/referrals"
+                        className="btn-ghost"
+                        style={{
+                          padding: '7px 12px',
+                          fontSize: 12,
+                          textDecoration: 'none',
+                          color: '#d4d4d4'
+                        }}
+                      >
+                        Ask Referral
+                      </Link>
+                      <button
+                        disabled={applyingId === job.id}
+                        onClick={() => handleApply(job.id)}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center',
+                          padding: '8px 18px', borderRadius: 7,
+                          background: applyingId === job.id ? '#1a1a1a' : '#fff',
+                          color: applyingId === job.id ? '#525252' : '#000',
+                          border: 'none', fontWeight: 600, fontSize: 13,
+                          cursor: applyingId === job.id ? 'not-allowed' : 'pointer',
+                          transition: 'opacity .15s',
+                        }}
+                      >
+                        {applyingId === job.id ? 'Applying…' : 'Apply'}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

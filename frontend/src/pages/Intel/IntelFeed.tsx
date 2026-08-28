@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Layout } from '../../components/Layout';
 import type { InterviewIntel } from '../../api/intel';
 import { getIntelFeed } from '../../api/intel';
-import { Target, MessageSquare } from 'lucide-react';
+import { Target, MessageSquare, Search, X } from 'lucide-react';
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -24,41 +24,110 @@ const DifficultyStars = ({ rating }: { rating?: number }) => {
 export const IntelFeed = () => {
   const [intelList, setIntelList] = useState<InterviewIntel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchIntel = async (companyName?: string) => {
+    try {
+      const data = await getIntelFeed(companyName);
+      setIntelList(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchIntel = async () => {
-      try {
-        const data = await getIntelFeed();
-        setIntelList(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchIntel();
   }, []);
 
+  // Filter case-insensitively by company name; if multiple companies match (even case-sensitive variants), all are included
+  const filteredIntel = useMemo(() => {
+    if (!searchQuery.trim()) return intelList;
+    const query = searchQuery.toLowerCase().trim();
+    return intelList.filter(item => 
+      item.company_name?.toLowerCase().includes(query)
+    );
+  }, [intelList, searchQuery]);
+
   return (
     <Layout>
-      <div className="animate-fade-up" style={{ marginBottom: 32, maxWidth: 800, margin: '0 auto 32px' }}>
+      <div className="animate-fade-up" style={{ marginBottom: 28, maxWidth: 800, margin: '0 auto 28px' }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em' }}>Interview Intel</h1>
         <p style={{ margin: '6px 0 0', color: '#737373', fontSize: 14 }}>Verified, anonymous interview experiences shared by the LoopBack community.</p>
+      </div>
+
+      {/* Search by Company Name */}
+      <div className="animate-fade-up" style={{ maxWidth: 800, margin: '0 auto 24px' }}>
+        <div style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          background: '#0a0a0a',
+          border: '1px solid #262626',
+          borderRadius: 10,
+          padding: '2px 14px',
+          transition: 'border-color .15s ease',
+        }}>
+          <Search size={16} color="#737373" style={{ marginRight: 10, flexShrink: 0 }} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by company name (e.g. Google, Stripe)..."
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: '#fff',
+              fontSize: 14,
+              padding: '10px 0',
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#737373',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        {searchQuery.trim() && (
+          <div style={{ marginTop: 8, fontSize: 12, color: '#737373' }}>
+            Found {filteredIntel.length} {filteredIntel.length === 1 ? 'interview report' : 'interview reports'} matching "{searchQuery.trim()}"
+          </div>
+        )}
       </div>
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
           <div className="spinner" />
         </div>
-      ) : intelList.length === 0 ? (
+      ) : filteredIntel.length === 0 ? (
         <div className="card animate-fade-up" style={{ maxWidth: 800, margin: '0 auto', padding: '64px 24px', textAlign: 'center', color: '#525252' }}>
           <MessageSquare size={32} style={{ opacity: 0.3, marginBottom: 16 }} />
-          <p style={{ margin: 0, fontSize: 15 }}>No interview intel has been shared yet.</p>
-          <p style={{ margin: '6px 0 0', fontSize: 13 }}>Apply for a job and share your experience to help the community!</p>
+          <p style={{ margin: 0, fontSize: 15 }}>
+            {searchQuery.trim() ? `No interview intel found for company "${searchQuery.trim()}".` : 'No interview intel has been shared yet.'}
+          </p>
+          <p style={{ margin: '6px 0 0', fontSize: 13 }}>
+            {searchQuery.trim() ? 'Try checking your spelling or searching for another company.' : 'Apply for a job and share your experience to help the community!'}
+          </p>
         </div>
       ) : (
         <div className="stagger" style={{ maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {intelList.map(intel => (
+          {filteredIntel.map(intel => (
             <div key={intel.id} className="card animate-fade-up" style={{ padding: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, borderBottom: '1px solid #1a1a1a', paddingBottom: 20, marginBottom: 20 }}>
                 <div>

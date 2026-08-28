@@ -28,7 +28,9 @@ export const submitIntel = async (intelData: {
   return response.data;
 };
 
-export const getIntelFeed = async (): Promise<InterviewIntel[]> => {
-  const response = await apiClient.get('/intel/');
+export const getIntelFeed = async (companyName?: string): Promise<InterviewIntel[]> => {
+  const response = await apiClient.get('/intel/', {
+    params: companyName ? { company_name: companyName } : undefined
+  });
   return response.data;
 };

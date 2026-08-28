@@ -15,3 +15,4 @@ def calculate_tag_overlap(source_tags: List[str], target_tags: List[str]) -> flo
 
     overlap = len(set_source & set_target)
     return float(overlap) / float(len(set_source))
+

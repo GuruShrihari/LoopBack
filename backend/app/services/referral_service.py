@@ -133,3 +133,4 @@ def update_request_status(
     session.commit()
     session.refresh(req)
     return req
+
