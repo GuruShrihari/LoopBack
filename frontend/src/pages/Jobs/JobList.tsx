@@ -434,7 +434,13 @@ export const JobList = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: 12, color: '#a3a3a3', marginBottom: 4 }}>Company *</label>
-                  <select required style={inputStyle} value={newJob.company_id} onChange={e => setNewJob({...newJob, company_id: e.target.value})}>
+                  <select 
+                    required 
+                    style={{ ...inputStyle, ...(user?.employer_id ? { opacity: 0.7, cursor: 'not-allowed' } : {}) }}
+                    value={newJob.company_id} 
+                    onChange={e => setNewJob({...newJob, company_id: e.target.value})}
+                    disabled={!!user?.employer_id}
+                  >
                     <option value="" disabled>Select company…</option>
                     {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
