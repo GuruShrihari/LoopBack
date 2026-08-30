@@ -74,6 +74,11 @@ async def startup_event():
             conn.execute(text('ALTER TABLE jobposting ADD COLUMN IF NOT EXISTS referral_limit INTEGER DEFAULT 5;'))
     except Exception as err:
         print(f"Migration notice: {err}")
+    from app.core.seeder import seed_initial_data
+    try:
+        seed_initial_data()
+    except Exception as seed_err:
+        print(f"Seeding notice: {seed_err}")
     asyncio.create_task(ghosting_sweep_task())
 
 from app.routers import auth, company, job, application, intel, referrals, upload, ai

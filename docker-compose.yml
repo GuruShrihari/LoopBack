@@ -21,6 +21,9 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+psycopg2://user:password@db:5432/recruitment_db
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    env_file:
+      - .env
     depends_on:
       - db
 
