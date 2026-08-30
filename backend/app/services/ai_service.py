@@ -74,21 +74,17 @@ def generate_fallback_analysis(job: JobPosting, resume_text: str) -> Dict[str, A
     }
 
 
-def analyze_resume_and_match_job(job: JobPosting, file_bytes: bytes, filename: str) -> Dict[str, Any]:
-    """Analyze candidate resume against job posting using Gemini API or fallback."""
-    resume_text = extract_text_from_file(file_bytes, filename)
-    api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY", "")
+from app.core.circuit_breaker import CircuitBreaker
 
-    if not api_key:
-        return generate_fallback_analysis(job, resume_text)
+gemini_circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=30.0)
 
-    try:
-        from google import genai
-        from google.genai import types
 
-        client = genai.Client(api_key=api_key)
-        
-        prompt = f"""
+def _call_gemini_api(api_key: str, job: JobPosting, resume_text: str) -> Dict[str, Any]:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+    prompt = f"""
 You are an expert technical recruiter and career coach.
 Analyze the following candidate resume against the target job posting.
 
@@ -113,26 +109,36 @@ Return a JSON object matching this exact structure:
   "referral_pitch": "<a compelling 2-3 sentence referral pitch written in first-person candidate voice requesting an insider referral>"
 }}
 """
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json"
-            )
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json"
         )
-        
-        if response and response.text:
-            cleaned_json = response.text.strip().removeprefix("```json").removesuffix("```").strip()
-            parsed = json.loads(cleaned_json)
-            return {
-                "match_score": int(parsed.get("match_score", 75)),
-                "match_summary": str(parsed.get("match_summary", "Good overall match.")),
-                "strengths": list(parsed.get("strengths", [])),
-                "gaps": list(parsed.get("gaps", [])),
-                "referral_pitch": str(parsed.get("referral_pitch", ""))
-            }
+    )
+    
+    if response and response.text:
+        cleaned_json = response.text.strip().removeprefix("```json").removesuffix("```").strip()
+        parsed = json.loads(cleaned_json)
+        return {
+            "match_score": int(parsed.get("match_score", 75)),
+            "match_summary": str(parsed.get("match_summary", "Good overall match.")),
+            "strengths": list(parsed.get("strengths", [])),
+            "gaps": list(parsed.get("gaps", [])),
+            "referral_pitch": str(parsed.get("referral_pitch", ""))
+        }
+    raise RuntimeError("Empty response from Gemini API")
 
-    except Exception as err:
-        print(f"Gemini API analysis notice: {err}")
 
-    return generate_fallback_analysis(job, resume_text)
+def analyze_resume_and_match_job(job: JobPosting, file_bytes: bytes, filename: str) -> Dict[str, Any]:
+    """Analyze candidate resume against job posting using Gemini API or fallback."""
+    resume_text = extract_text_from_file(file_bytes, filename)
+    api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY", "")
+
+    if not api_key:
+        return generate_fallback_analysis(job, resume_text)
+
+    return gemini_circuit_breaker.call(
+        func=lambda: _call_gemini_api(api_key, job, resume_text),
+        fallback_func=lambda: generate_fallback_analysis(job, resume_text)
+    )

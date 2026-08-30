@@ -181,8 +181,7 @@ export const JobList = () => {
 
   const companyName = (id: string) => companies.find(c => c.id === id)?.name || 'Unknown Company';
   const selectedCompany = companyFilterId ? companies.find(c => c.id === companyFilterId) : null;
-  const myCompany = companies.find(c => c.id === user?.employer_id);
-  const isCompanyCreator = Boolean(user?.employer_id && myCompany && myCompany.created_by_user_id === user?.id);
+  const isRecruiter = user?.role === 'recruiter' || user?.role === 'both';
 
   const filteredJobs = jobs.filter(j => {
     if (j.status !== 'active') return false;
@@ -211,7 +210,7 @@ export const JobList = () => {
               {selectedCompany ? `Explore active job openings at ${selectedCompany.name}.` : 'Browse open opportunities or request an insider referral.'}
             </p>
           </div>
-          {isCompanyCreator && (
+          {isRecruiter && (
             <button className="btn-primary" onClick={() => setShowModal(true)}>
               <Plus size={15} /> Post New Job
             </button>

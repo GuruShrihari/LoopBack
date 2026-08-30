@@ -8,7 +8,12 @@ import os
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+from app.core.idempotency import IdempotencyMiddleware
+
 app = FastAPI(title="Recruitment API - Lean Edition")
+
+# Idempotency middleware for caching retried mutating requests
+app.add_middleware(IdempotencyMiddleware, ttl_seconds=86400)
 
 # Set all CORS enabled origins
 app.add_middleware(
@@ -42,6 +47,9 @@ async def ghosting_sweep_task():
 async def startup_event():
     from app.core.db import engine
     from sqlmodel import SQLModel, text
+    from app.core.telemetry import setup_telemetry_listeners
+
+    setup_telemetry_listeners()
     SQLModel.metadata.create_all(engine)
     try:
         with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
