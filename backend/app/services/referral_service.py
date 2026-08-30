@@ -185,7 +185,8 @@ def update_request_status(
                 "note": "Referred"
             }],
             created_at=get_utc_now(),
-            updated_at=get_utc_now()
+            updated_at=get_utc_now(),
+            applied_at=get_utc_now()
         )
         session.add(new_app)
         

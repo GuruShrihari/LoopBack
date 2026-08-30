@@ -18,11 +18,11 @@ class Application(SQLModel, table=True):
     status_history: list[dict] = Field(sa_column=Column(JSONB))
     # entry shape: {"status": str, "at": iso_ts, "actor": "system"|"employer"|"candidate", "note": str|None}
     cover_note: Optional[str] = None
-    applied_at: datetime
+    applied_at: datetime = Field(default_factory=datetime.utcnow)
     last_employer_response_at: Optional[datetime] = None
     is_ghosted: bool = Field(default=False)
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     __table_args__ = (
         UniqueConstraint("user_id", "posting_id", name="uq_user_posting_application"),

@@ -68,7 +68,7 @@ async def startup_event():
         print(f"Migration notice: {err}")
     asyncio.create_task(ghosting_sweep_task())
 
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+from app.routers import auth, company, job, application, intel, referrals, upload, ai
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(company.router, prefix="/companies", tags=["companies"])
@@ -77,6 +77,7 @@ app.include_router(application.router, prefix="/applications", tags=["applicatio
 app.include_router(intel.router, prefix="/intel", tags=["intel"])
 app.include_router(referrals.router, tags=["referrals"])
 app.include_router(upload.router, prefix="/upload", tags=["upload"])
+app.include_router(ai.router, prefix="/ai", tags=["ai"])
 
 @app.get("/health")
 def health_check():

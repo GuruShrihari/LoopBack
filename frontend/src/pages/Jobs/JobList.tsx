@@ -9,8 +9,9 @@ import { getJobs, createJob } from '../../api/job';
 import { createApplication, getMyApplications } from '../../api/application';
 import type { ReferralOffer } from '../../api/referral';
 import { getReferralOffers, createReferralRequest } from '../../api/referral';
-import { Search, Plus, MapPin, DollarSign, X, AlertTriangle, Building2, CheckCircle2 } from 'lucide-react';
+import { Search, Plus, MapPin, DollarSign, X, AlertTriangle, Building2, CheckCircle2, Sparkles, AlertCircle, Copy, Send } from 'lucide-react';
 import apiClient from '../../api/client';
+import { analyzeJobMatch, type AIMatchResponse } from '../../api/ai';
 
 export const JobList = () => {
   const user = useAuthStore((s) => s.user);
@@ -44,6 +45,13 @@ export const JobList = () => {
   const [referralNote, setReferralNote] = useState('');
   const [selectedOfferId, setSelectedOfferId] = useState<string>('');
   const [requestingReferral, setRequestingReferral] = useState(false);
+
+  // AI Match & Pitch State
+  const [aiJobId, setAiJobId] = useState<string | null>(null);
+  const [aiFile, setAiFile] = useState<File | null>(null);
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState<AIMatchResponse | null>(null);
+  const [copiedPitch, setCopiedPitch] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -131,6 +139,43 @@ export const JobList = () => {
       alert(err.response?.data?.detail || 'Failed to request referral');
     } finally {
       setRequestingReferral(false);
+    }
+  };
+
+  const handleRunAiMatch = async () => {
+    if (!aiJobId || !aiFile) {
+      alert("Resume document is required for AI matching.");
+      return;
+    }
+    setAiAnalyzing(true);
+    try {
+      const res = await analyzeJobMatch(aiJobId, aiFile);
+      setAiResult(res);
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "AI analysis failed");
+    } finally {
+      setAiAnalyzing(false);
+    }
+  };
+
+  const handleCopyPitch = () => {
+    if (aiResult?.referral_pitch) {
+      navigator.clipboard.writeText(aiResult.referral_pitch);
+      setCopiedPitch(true);
+      setTimeout(() => setCopiedPitch(false), 2000);
+    }
+  };
+
+  const handleUsePitchInReferral = () => {
+    if (!aiJobId || !aiResult) return;
+    const targetJobId = aiJobId;
+    const pitch = aiResult.referral_pitch;
+    
+    setAiJobId(null);
+    setReferralJobId(targetJobId);
+    setReferralNote(pitch);
+    if (aiFile) {
+      setReferralResume(aiFile);
     }
   };
 
@@ -230,12 +275,23 @@ export const JobList = () => {
                       </div>
 
                       {user?.role === 'candidate' && (
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <button
+                            className="btn-ghost"
+                            onClick={() => {
+                              setAiJobId(job.id);
+                              setAiFile(null);
+                              setAiResult(null);
+                            }}
+                            style={{ padding: '8px 14px', fontSize: 13, color: '#a855f7', borderColor: '#581c87', display: 'flex', alignItems: 'center', gap: 6 }}
+                          >
+                            <Sparkles size={14} /> AI Match & Pitch
+                          </button>
                           {jobOffers.length > 0 && (
                             <button
                               className="btn-ghost"
                               onClick={() => setReferralJobId(job.id)}
-                              style={{ padding: '8px 16px', fontSize: 13, color: '#eab308', borderColor: '#422006' }}
+                              style={{ padding: '8px 14px', fontSize: 13, color: '#eab308', borderColor: '#422006' }}
                             >
                               Ask for Referral ({jobOffers.length})
                             </button>
@@ -243,7 +299,7 @@ export const JobList = () => {
                           <button
                             className="btn-primary"
                             onClick={() => setApplyJobId(job.id)}
-                            style={{ padding: '8px 20px', fontSize: 13 }}
+                            style={{ padding: '8px 16px', fontSize: 13 }}
                           >
                             Apply Direct
                           </button>
@@ -405,6 +461,127 @@ export const JobList = () => {
                   <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={isSubmitting}>Publish Job</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* AI Match & Pitch Modal */}
+        {aiJobId && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, overflowY: 'auto' }}>
+            <div style={{ background: '#0a0a0a', border: '1px solid #262626', borderRadius: 16, width: '100%', maxWidth: 540, padding: 28, margin: 'auto', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.9)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: '#fff' }}>
+                    <Sparkles size={20} color="#a855f7" /> AI Resume Matcher & Pitch
+                  </h2>
+                  <p style={{ margin: '4px 0 0', fontSize: 12, color: '#737373' }}>
+                    Upload your resume to calculate AI Match Score & generate a referral pitch.
+                  </p>
+                </div>
+                <button onClick={() => setAiJobId(null)} style={{ background: 'none', border: 'none', color: '#525252', cursor: 'pointer', padding: 4 }}>
+                  <X size={16} />
+                </button>
+              </div>
+
+              {!aiResult ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ background: '#141414', padding: 18, borderRadius: 12, border: '1px solid #262626' }}>
+                    <label style={{ display: 'block', fontSize: 12, color: '#fff', fontWeight: 600, marginBottom: 6 }}>
+                      Upload Resume Document (PDF / DOC / TXT) *
+                    </label>
+                    <p style={{ margin: '0 0 12px', fontSize: 11, color: '#737373' }}>
+                      Gemini AI will parse your resume and evaluate fit against {jobs.find(j => j.id === aiJobId)?.title}.
+                    </p>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt"
+                      onChange={e => setAiFile(e.target.files?.[0] || null)}
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                    <button className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setAiJobId(null)}>Cancel</button>
+                    <button
+                      className="btn-primary"
+                      style={{ flex: 1, justifyContent: 'center', background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', borderColor: '#7e22ce' }}
+                      onClick={handleRunAiMatch}
+                      disabled={aiAnalyzing || !aiFile}
+                    >
+                      {aiAnalyzing ? 'Analyzing with Gemini AI…' : 'Analyze Fit & Pitch'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {/* Match Score Display */}
+                  <div style={{
+                    background: aiResult.match_score >= 75 ? '#064e3b20' : aiResult.match_score >= 60 ? '#451a0320' : '#7f1d1d20',
+                    border: `1px solid ${aiResult.match_score >= 75 ? '#05966950' : aiResult.match_score >= 60 ? '#d9770650' : '#dc262650'}`,
+                    borderRadius: 14, padding: 20, textAlign: 'center'
+                  }}>
+                    <div style={{
+                      fontSize: 36, fontWeight: 800,
+                      color: aiResult.match_score >= 75 ? '#10b981' : aiResult.match_score >= 60 ? '#f59e0b' : '#ef4444'
+                    }}>
+                      {aiResult.match_score}% Match
+                    </div>
+                    <p style={{ margin: '6px 0 0', fontSize: 13, color: '#d4d4d4', lineHeight: 1.5 }}>
+                      {aiResult.match_summary}
+                    </p>
+                  </div>
+
+                  {/* Strengths & Gaps */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div style={{ background: '#141414', padding: 14, borderRadius: 10, border: '1px solid #262626' }}>
+                      <h4 style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle2 size={14} /> Matching Strengths
+                      </h4>
+                      <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#a3a3a3' }}>
+                        {aiResult.strengths.map((s, idx) => <li key={idx} style={{ marginBottom: 4 }}>{s}</li>)}
+                      </ul>
+                    </div>
+
+                    <div style={{ background: '#141414', padding: 14, borderRadius: 10, border: '1px solid #262626' }}>
+                      <h4 style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <AlertCircle size={14} /> Skill Gaps / Focus
+                      </h4>
+                      <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#a3a3a3' }}>
+                        {aiResult.gaps.map((g, idx) => <li key={idx} style={{ marginBottom: 4 }}>{g}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* AI Generated Referral Pitch */}
+                  <div style={{ background: '#170f2e', border: '1px solid #4c1d95', padding: 16, borderRadius: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#c084fc', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Sparkles size={14} /> AI-Generated Referral Pitch
+                      </span>
+                      <button
+                        onClick={handleCopyPitch}
+                        style={{ background: 'none', border: 'none', color: copiedPitch ? '#10b981' : '#a855f7', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}
+                      >
+                        <Copy size={12} /> {copiedPitch ? 'Copied!' : 'Copy Pitch'}
+                      </button>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, color: '#e9d5ff', lineHeight: 1.6, fontStyle: 'italic' }}>
+                      "{aiResult.referral_pitch}"
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setAiResult(null)}>Re-analyze</button>
+                    <button
+                      className="btn-primary"
+                      style={{ flex: 1.5, justifyContent: 'center', background: '#22c55e', borderColor: '#15803d' }}
+                      onClick={handleUsePitchInReferral}
+                    >
+                      <Send size={14} /> Use Pitch for Referral
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
