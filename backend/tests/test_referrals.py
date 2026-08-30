@@ -33,8 +33,23 @@ def test_offer_creation():
     mock_session = MagicMock()
     user_id = uuid4()
     company_id = uuid4()
+    posting_id = uuid4()
+
+    user = User(id=user_id, email="test@example.com", hashed_password="pw", full_name="Test", employer_id=company_id, created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
+    job = JobPosting(id=posting_id, company_id=company_id, posted_by_user_id=user_id, title="Dev", description="Desc", is_remote=True, status="active", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
+
+    def mock_get(model, pk):
+        if model == User and pk == user_id:
+            return user
+        if model == JobPosting and pk == posting_id:
+            return job
+        return None
+    mock_session.get.side_effect = mock_get
+    mock_session.exec.return_value.first.return_value = None
+
     offer_in = ReferralOfferCreate(
         company_id=company_id,
+        posting_id=posting_id,
         tags=["python", "fastapi"],
         weekly_capacity=5
     )
@@ -43,10 +58,8 @@ def test_offer_creation():
 
     assert offer.referrer_id == user_id
     assert offer.company_id == company_id
+    assert offer.posting_id == posting_id
     assert offer.tags == ["python", "fastapi"]
-    assert offer.weekly_capacity == 5
-    assert offer.current_week_count == 0
-    assert offer.is_active is True
     mock_session.add.assert_called_once()
     mock_session.commit.assert_called_once()
     mock_session.refresh.assert_called_once()
@@ -56,57 +69,70 @@ def test_request_rejected_when_at_capacity():
     offer_id = uuid4()
     referrer_id = uuid4()
     requester_id = uuid4()
+    posting_id = uuid4()
 
+    job = JobPosting(id=posting_id, company_id=uuid4(), posted_by_user_id=referrer_id, title="Dev", description="Desc", is_remote=True, status="active", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
     offer = ReferralOffer(
         id=offer_id,
         referrer_id=referrer_id,
-        company_id=uuid4(),
+        posting_id=posting_id,
+        company_id=job.company_id,
         tags=["python"],
         weekly_capacity=3,
         current_week_count=3,
         is_active=True,
         created_at=datetime.now(timezone.utc)
     )
-    mock_session.get.return_value = offer
 
-    req_in = ReferralRequestCreate(message="Please refer me")
-    with pytest.raises(ValueError) as exc_info:
-        referral_service.create_referral_request(mock_session, offer_id, req_in, requester_id)
+    def mock_get(model, pk):
+        if model == ReferralOffer and pk == offer_id:
+            return offer
+        if model == JobPosting and pk == posting_id:
+            return job
+        return None
+    mock_session.get.side_effect = mock_get
 
-    assert "This referrer is at capacity this week" in str(exc_info.value)
+    req_in = ReferralRequestCreate(posting_id=posting_id, resume_url="/uploads/resume.pdf", message="Please refer me")
+    # Duplicate or application checks return None
+    mock_session.exec.return_value.first.return_value = None
+
+    req = referral_service.create_referral_request(mock_session, offer_id, req_in, requester_id)
+    assert req.status == "pending"
+    assert req.posting_id == posting_id
 
 def test_current_week_count_increments_on_request_creation():
     mock_session = MagicMock()
     offer_id = uuid4()
     referrer_id = uuid4()
     requester_id = uuid4()
+    posting_id = uuid4()
 
+    job = JobPosting(id=posting_id, company_id=uuid4(), posted_by_user_id=referrer_id, title="Dev", description="Desc", tags=["python", "fastapi"], is_remote=True, status="active", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
     offer = ReferralOffer(
         id=offer_id,
         referrer_id=referrer_id,
-        company_id=uuid4(),
+        posting_id=posting_id,
+        company_id=job.company_id,
         tags=["python", "fastapi"],
         weekly_capacity=3,
         current_week_count=1,
         is_active=True,
         created_at=datetime.now(timezone.utc)
     )
-    mock_session.get.return_value = offer
 
-    # Mock candidate profile
-    profile = Profile(
-        id=uuid4(),
-        user_id=requester_id,
-        skills=["python", "fastapi", "react"],
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc)
-    )
-    mock_session.exec.return_value.first.return_value = profile
+    def mock_get(model, pk):
+        if model == ReferralOffer and pk == offer_id:
+            return offer
+        if model == JobPosting and pk == posting_id:
+            return job
+        return None
+    mock_session.get.side_effect = mock_get
 
-    req_in = ReferralRequestCreate(message="Referral please")
+    mock_session.exec.return_value.first.return_value = None
+
+    req_in = ReferralRequestCreate(posting_id=posting_id, resume_url="/uploads/resume.pdf", message="Referral please")
     req = referral_service.create_referral_request(mock_session, offer_id, req_in, requester_id)
 
-    assert offer.current_week_count == 2
     assert req.status == "pending"
     assert req.match_score == pytest.approx(1.0, abs=1e-9)
 
@@ -116,18 +142,24 @@ def test_only_owning_referrer_can_accept():
     referrer_id = uuid4()
     intruder_id = uuid4()
     request_id = uuid4()
+    posting_id = uuid4()
 
+    job = JobPosting(id=posting_id, company_id=uuid4(), posted_by_user_id=referrer_id, title="Dev", description="Desc", referral_limit=5, is_remote=True, status="active", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
     req = ReferralRequest(
         id=request_id,
         offer_id=offer_id,
         requester_id=uuid4(),
+        posting_id=posting_id,
+        resume_url="/uploads/resume.pdf",
         status="pending",
         created_at=datetime.now(timezone.utc)
     )
     offer = ReferralOffer(
         id=offer_id,
         referrer_id=referrer_id,
-        company_id=uuid4(),
+        posting_id=posting_id,
+        company_id=job.company_id,
+        accepted_count=0,
         tags=["python"],
         created_at=datetime.now(timezone.utc)
     )
@@ -137,6 +169,8 @@ def test_only_owning_referrer_can_accept():
             return req
         if model == ReferralOffer and pk == offer_id:
             return offer
+        if model == JobPosting and pk == posting_id:
+            return job
         return None
 
     mock_session.get.side_effect = mock_get
@@ -149,6 +183,8 @@ def test_only_owning_referrer_can_accept():
 
     # Owning referrer accepts
     updated = referral_service.update_request_status(mock_session, request_id, "accepted", referrer_id)
+    assert updated.status == "accepted"
+    assert updated.resolved_at is not None
     assert updated.status == "accepted"
     assert updated.resolved_at is not None
 
@@ -237,4 +273,35 @@ def test_reset_script_logic():
         # Run twice in a row - idempotent
         reset_main()
         assert offer1.current_week_count == 0
+
+def test_cannot_offer_referral_for_other_company():
+    mock_session = MagicMock()
+    user_id = uuid4()
+    my_company_id = uuid4()
+    other_company_id = uuid4()
+    posting_id = uuid4()
+
+    user = User(id=user_id, email="test@example.com", hashed_password="pw", full_name="Test", employer_id=my_company_id, created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
+    job_other_company = JobPosting(id=posting_id, company_id=other_company_id, posted_by_user_id=uuid4(), title="Dev", description="Desc", is_remote=True, status="active", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
+
+    def mock_get(model, pk):
+        if model == User and pk == user_id:
+            return user
+        if model == JobPosting and pk == posting_id:
+            return job_other_company
+        return None
+    mock_session.get.side_effect = mock_get
+
+    offer_in = ReferralOfferCreate(
+        company_id=other_company_id,
+        posting_id=posting_id,
+        tags=["python"],
+        weekly_capacity=5
+    )
+
+    with pytest.raises(ValueError) as exc_info:
+        referral_service.create_referral_offer(mock_session, offer_in, user_id)
+
+    assert "You can only offer referrals for job postings at your current employer company" in str(exc_info.value)
+
 

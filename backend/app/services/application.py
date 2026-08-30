@@ -33,6 +33,7 @@ def create_application(session: Session, app_in: ApplicationCreate, user_id: UUI
     new_app = Application(
         user_id=user_id,
         posting_id=app_in.posting_id,
+        resume_url=app_in.resume_url,
         cover_note=app_in.cover_note,
         status=ApplicationStatus.APPLIED,
         status_history=[history_entry],
@@ -109,6 +110,15 @@ def update_application_status(session: Session, app_id: UUID, status_in: Applica
     
     if actor == "employer":
         app.last_employer_response_at = datetime.utcnow()
+        
+    job = session.get(JobPosting, app.posting_id)
+    
+    if status_in.status == ApplicationStatus.OFFER_ACCEPTED:
+        from app.models.user import User
+        user = session.get(User, app.user_id)
+        if user and job:
+            user.employer_id = job.company_id
+            session.add(user)
         
     session.add(app)
     session.commit()

@@ -13,6 +13,8 @@ class User(SQLModel, table=True):
     hashed_password: str
     full_name: str
     role: UserRole = Field(default=UserRole.CANDIDATE)
+    employer_id: Optional[UUID] = Field(default=None, foreign_key="company.id", index=True)
+    employment_doc_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

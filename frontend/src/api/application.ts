@@ -22,10 +22,12 @@ export interface Application {
   company_name: string;
 }
 
-export const applyToJob = async (posting_id: string, cover_note?: string): Promise<Application> => {
-  const response = await apiClient.post('/applications/', { posting_id, cover_note });
+export const applyToJob = async (data: { posting_id: string; resume_url: string; cover_note?: string }): Promise<Application> => {
+  const response = await apiClient.post('/applications/', data);
   return response.data;
 };
+
+export const createApplication = applyToJob;
 
 export const getMyApplications = async (): Promise<Application[]> => {
   const response = await apiClient.get('/applications/me');

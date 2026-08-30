@@ -6,6 +6,7 @@ from app.models.enums import ApplicationStatus
 
 class ApplicationCreate(BaseModel):
     posting_id: UUID
+    resume_url: str
     cover_note: Optional[str] = None
 
 class ApplicationUpdateStatus(BaseModel):
@@ -17,6 +18,8 @@ class ApplicationRead(BaseModel):
     user_id: UUID
     posting_id: UUID
     status: ApplicationStatus
+    resume_url: Optional[str] = None
+    referred_by_id: Optional[UUID] = None
     status_history: list[Any]
     cover_note: Optional[str] = None
     applied_at: datetime

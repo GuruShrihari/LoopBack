@@ -11,6 +11,7 @@ class ApplicationStatus(str, enum.Enum):
     SCREENING    = "SCREENING"
     INTERVIEWING = "INTERVIEWING"
     OFFERED      = "OFFERED"
+    OFFER_ACCEPTED = "OFFER_ACCEPTED"
     REJECTED     = "REJECTED"
     GHOSTED      = "GHOSTED"
     WITHDRAWN    = "WITHDRAWN"

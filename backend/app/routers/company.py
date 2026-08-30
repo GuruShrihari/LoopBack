@@ -13,9 +13,9 @@ router = APIRouter()
 def create_company(
     session: SessionDep, current_user: CurrentUser, company_in: CompanyCreate
 ) -> CompanyRead:
-    if current_user.role != UserRole.RECRUITER:
-        raise HTTPException(status_code=403, detail="Only recruiters can create companies.")
-    return company_service.create_company(session=session, company_in=company_in)
+    if current_user.employer_id:
+        raise HTTPException(status_code=400, detail="You are already linked to an employer company.")
+    return company_service.create_company(session=session, company_in=company_in, creator_id=current_user.id)
 
 @router.get("/", response_model=list[CompanyRead])
 def read_companies(session: SessionDep) -> list[CompanyRead]:

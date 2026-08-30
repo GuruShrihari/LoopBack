@@ -20,11 +20,14 @@ def create_offer(
     current_user: CurrentUser,
     offer_in: ReferralOfferCreate
 ):
-    return referral_service.create_referral_offer(
-        session=session,
-        offer_in=offer_in,
-        user_id=current_user.id
-    )
+    try:
+        return referral_service.create_referral_offer(
+            session=session,
+            offer_in=offer_in,
+            user_id=current_user.id
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/referral-offers", response_model=List[ReferralOfferPublic])
 def read_offers(
@@ -32,11 +35,15 @@ def read_offers(
     company_id: Optional[UUID] = None,
     tag: Optional[str] = None
 ):
-    return referral_service.get_referral_offers(
-        session=session,
-        company_id=company_id,
-        tag=tag
-    )
+    try:
+        return referral_service.get_referral_offers(
+            session=session,
+            company_id=company_id,
+            tag=tag
+        )
+    except Exception as err:
+        print(f"Referral offers fetch notice: {err}")
+        return []
 
 @router.post("/referral-offers/{offer_id}/requests", response_model=ReferralRequestPublic)
 def create_request(

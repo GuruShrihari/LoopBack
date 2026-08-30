@@ -5,6 +5,8 @@ export interface User {
   email: string;
   full_name: string;
   role: string;
+  employer_id?: string | null;
+  employment_doc_url?: string | null;
 }
 
 export interface Token {

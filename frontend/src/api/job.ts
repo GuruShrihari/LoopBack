@@ -13,6 +13,8 @@ export interface JobPosting {
   tags: string[];
   status: string;
   scam_risk_score?: number;
+  response_timeframe_days?: number;
+  referral_limit?: number;
   created_at: string;
 }
 

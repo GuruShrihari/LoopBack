@@ -4,9 +4,12 @@ from uuid import UUID
 from app.models.job import JobPosting
 from app.schemas.job import JobPostingCreate
 
-def create_job(session: Session, job_in: JobPostingCreate, user_id: UUID) -> JobPosting:
+def create_job(session: Session, job_in: JobPostingCreate, user_id: UUID, company_id: UUID) -> JobPosting:
+    data = job_in.model_dump()
+    data.pop("company_id", None)
     job = JobPosting(
-        **job_in.model_dump(),
+        **data,
+        company_id=company_id,
         posted_by_user_id=user_id,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()

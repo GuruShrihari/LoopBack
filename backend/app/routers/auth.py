@@ -47,3 +47,32 @@ def read_current_user(current_user: CurrentUser) -> UserRead:
     Get current user.
     """
     return current_user
+
+from pydantic import BaseModel
+from uuid import UUID
+
+class EmployerUpdate(BaseModel):
+    employer_id: UUID
+    employment_doc_url: str | None = None
+
+from app.models.company import Company
+
+@router.patch("/me/employer", response_model=UserRead)
+def set_employer(session: SessionDep, current_user: CurrentUser, emp_update: EmployerUpdate) -> UserRead:
+    company = session.get(Company, emp_update.employer_id)
+    if not company:
+        raise HTTPException(status_code=404, detail="Selected company does not exist.")
+
+    current_user.employer_id = emp_update.employer_id
+    if emp_update.employment_doc_url:
+        current_user.employment_doc_url = emp_update.employment_doc_url
+
+    try:
+        session.add(current_user)
+        session.commit()
+        session.refresh(current_user)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Could not update employer: {str(e)}")
+
+    return current_user

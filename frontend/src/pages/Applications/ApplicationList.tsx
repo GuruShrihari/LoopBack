@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Layout } from '../../components/Layout';
 import type { Application } from '../../api/application';
-import { getMyApplications } from '../../api/application';
+import { getMyApplications, updateApplicationStatus } from '../../api/application';
 import { submitIntel } from '../../api/intel';
 import { Building2, Share2, Plus, X, Trash2 } from 'lucide-react';
+import { getMe } from '../../api/auth';
+import { useAuthStore } from '../../store/authStore';
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -31,18 +33,19 @@ export const ApplicationList = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const fetchApplications = async () => {
+    try {
+      const data = await getMyApplications();
+      setApplications(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchApps = async () => {
-      try {
-        const data = await getMyApplications();
-        setApplications(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchApps();
+    fetchApplications();
   }, []);
 
   const handleAddRound = () => {
@@ -54,7 +57,7 @@ export const ApplicationList = () => {
     setIntelData({ ...intelData, rounds: newRounds });
   };
 
-  const handleRoundChange = (index: number, field: string, value: string) => {
+  const handleRoundChange = (index: number, field: 'title' | 'description', value: string) => {
     const newRounds = [...intelData.rounds];
     newRounds[index] = { ...newRounds[index], [field]: value };
     setIntelData({ ...intelData, rounds: newRounds });
@@ -82,9 +85,22 @@ export const ApplicationList = () => {
     }
   };
 
+  const handleAcceptOffer = async (app: Application) => {
+    if (!confirm('Are you sure you want to accept this offer? This will update your employer and entitle you to an employee role for referrals.')) return;
+    try {
+      await updateApplicationStatus(app.id, 'OFFER_ACCEPTED');
+      const updatedUser = await getMe();
+      useAuthStore.getState().setUser(updatedUser);
+      fetchApplications();
+      alert('Congratulations! Offer accepted. You can now offer referrals for your company in the Referral Hub.');
+    } catch (err) {
+      alert('Failed to accept offer');
+    }
+  };
+
   return (
     <Layout>
-      <div className="animate-fade-up" style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 32 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em' }}>My Applications</h1>
         <p style={{ margin: '6px 0 0', color: '#737373', fontSize: 14 }}>Track the status of your active job applications.</p>
       </div>
@@ -111,22 +127,39 @@ export const ApplicationList = () => {
                     {app.company_name}
                   </div>
                 </div>
-                {/* Only show intel button if they have reached interview stage or higher */}
-                {['INTERVIEWING', 'OFFERED', 'REJECTED'].includes(app.status) && (
-                  <button 
-                    onClick={() => setIntelApp(app)}
-                    title="Share Interview Intel"
-                    style={{
-                      background: '#1a1a1a', border: 'none', color: '#d4d4d4',
-                      padding: 8, borderRadius: 8, cursor: 'pointer',
-                      transition: 'background .15s, color .15s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.color = '#d4d4d4'; }}
-                  >
-                    <Share2 size={16} />
-                  </button>
-                )}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {app.status === 'OFFERED' && (
+                    <button
+                      onClick={() => handleAcceptOffer(app)}
+                      title="Accept Offer"
+                      style={{
+                        background: '#1a1a1a', border: '1px solid #262626', color: '#10b981',
+                        padding: 8, borderRadius: 8, cursor: 'pointer',
+                        transition: 'background .15s, color .15s',
+                        fontWeight: 600, fontSize: 12
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#064e3b'; e.currentTarget.style.color = '#34d399'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.color = '#10b981'; }}
+                    >
+                      Accept Offer
+                    </button>
+                  )}
+                  {['INTERVIEWING', 'OFFERED', 'REJECTED'].includes(app.status) && (
+                    <button
+                      onClick={() => setIntelApp(app)}
+                      title="Share Interview Intel"
+                      style={{
+                        background: '#1a1a1a', border: '1px solid #262626', color: '#d4d4d4',
+                        padding: 8, borderRadius: 8, cursor: 'pointer',
+                        transition: 'background .15s, color .15s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.color = '#d4d4d4'; }}
+                    >
+                      <Share2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div style={{ marginBottom: 24 }}>

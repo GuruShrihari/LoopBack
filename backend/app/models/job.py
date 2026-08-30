@@ -21,6 +21,8 @@ class JobPosting(SQLModel, table=True):
     tags: list[str] = Field(sa_column=Column(ARRAY(String)))  # simple keyword tags, replaces embeddings for matching
     status: PostingStatus = Field(default=PostingStatus.ACTIVE)
     scam_risk_score: Optional[float] = None
+    response_timeframe_days: int = Field(default=30)
+    referral_limit: int = Field(default=5)
     created_at: datetime
     updated_at: datetime
 

@@ -16,6 +16,8 @@ class JobPostingBase(BaseModel):
 
 class JobPostingCreate(JobPostingBase):
     company_id: UUID
+    response_timeframe_days: int = 30
+    referral_limit: int = 5
 
 class JobPostingRead(JobPostingBase):
     id: UUID
@@ -23,6 +25,8 @@ class JobPostingRead(JobPostingBase):
     posted_by_user_id: UUID
     status: PostingStatus
     scam_risk_score: Optional[float] = None
+    response_timeframe_days: int
+    referral_limit: int
     created_at: datetime
     updated_at: datetime
     
