@@ -1,10 +1,9 @@
 import asyncio
 import inspect
-from typing import Dict, List, Callable, Any, Awaitable
+from typing import Dict, List, Callable, Any
 
 
 class EventBus:
-    """Asynchronous in-process Pub/Sub Event Bus for domain events."""
 
     def __init__(self):
         self._subscribers: Dict[str, List[Callable[[Dict[str, Any]], Any]]] = {}
@@ -16,15 +15,14 @@ class EventBus:
             self._subscribers[event_name].append(handler)
 
     async def publish(self, event_name: str, payload: Dict[str, Any]):
-        handlers = self._subscribers.get(event_name, [])
-        for handler in handlers:
+        for handler in self._subscribers.get(event_name, []):
             try:
                 if inspect.iscoroutinefunction(handler):
                     await handler(payload)
                 else:
                     handler(payload)
             except Exception as err:
-                print(f"EventBus handler error for event '{event_name}': {err}")
+                print(f"EventBus handler error [{event_name}]: {err}")
 
 
 event_bus = EventBus()

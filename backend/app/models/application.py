@@ -16,7 +16,6 @@ class Application(SQLModel, table=True):
     referred_by_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
     notes: Optional[str] = None
     status_history: list[dict] = Field(sa_column=Column(JSONB))
-    # entry shape: {"status": str, "at": iso_ts, "actor": "system"|"employer"|"candidate", "note": str|None}
     cover_note: Optional[str] = None
     applied_at: datetime = Field(default_factory=datetime.utcnow)
     last_employer_response_at: Optional[datetime] = None

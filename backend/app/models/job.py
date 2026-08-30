@@ -7,6 +7,7 @@ from typing import Optional
 
 from app.models.enums import PostingStatus
 
+
 class JobPosting(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     company_id: UUID = Field(foreign_key="company.id", index=True)
@@ -18,7 +19,7 @@ class JobPosting(SQLModel, table=True):
     is_remote: bool = Field(default=False)
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
-    tags: list[str] = Field(sa_column=Column(ARRAY(String)))  # simple keyword tags, replaces embeddings for matching
+    tags: list[str] = Field(sa_column=Column(ARRAY(String)))
     status: PostingStatus = Field(default=PostingStatus.ACTIVE)
     scam_risk_score: Optional[float] = None
     response_timeframe_days: int = Field(default=30)
@@ -29,6 +30,7 @@ class JobPosting(SQLModel, table=True):
     __table_args__ = (
         Index("ix_job_posting_company_id_status", "company_id", "status"),
     )
+
 
 class PrepBriefCache(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)

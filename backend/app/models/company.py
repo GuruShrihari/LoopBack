@@ -12,7 +12,6 @@ class Company(SQLModel, table=True):
     employee_proof_doc_url: Optional[str] = None
     is_verified: bool = Field(default=False)
     created_by_user_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
-    # denormalized, recomputed by a background task after each status change:
     median_response_hours: Optional[float] = None
     ghosting_rate: Optional[float] = None
     interview_to_offer_rate: Optional[float] = None

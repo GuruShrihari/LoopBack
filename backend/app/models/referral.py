@@ -10,7 +10,7 @@ class ReferralOffer(SQLModel, table=True):
     referrer_id: UUID = Field(foreign_key="user.id", index=True)
     posting_id: UUID = Field(foreign_key="jobposting.id", index=True)
     company_id: UUID = Field(foreign_key="company.id", index=True)
-    tags: list[str] = Field(sa_column=Column(ARRAY(String)))  # role/skill areas
+    tags: list[str] = Field(sa_column=Column(ARRAY(String)))
     weekly_capacity: int = Field(default=3)
     current_week_count: int = Field(default=0)
     accepted_count: int = Field(default=0)
@@ -25,7 +25,7 @@ class ReferralRequest(SQLModel, table=True):
     resume_url: Optional[str] = None
     match_score: Optional[float] = None
     message: Optional[str] = None
-    status: str = Field(default="pending")  # pending | accepted | declined | expired
+    status: str = Field(default="pending")
     created_at: datetime
     resolved_at: Optional[datetime] = None
 
