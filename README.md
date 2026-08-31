@@ -494,7 +494,7 @@ The application automatically seeds demo accounts for evaluation.
 These accounts allow the different candidate, recruiter, and referral workflows to be explored without additional setup.
 
 ---
-
+Thank you for your time and consideration <3.
 # License
 
 This project is licensed under the MIT License.
