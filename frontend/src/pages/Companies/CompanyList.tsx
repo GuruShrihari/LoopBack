@@ -4,7 +4,7 @@ import { Layout } from '../../components/Layout';
 import type { Company } from '../../api/company';
 import { getCompanies, createCompany } from '../../api/company';
 import { useAuthStore } from '../../store/authStore';
-import { Plus, X, Building2, Briefcase, FileCheck, ShieldCheck } from 'lucide-react';
+import { Plus, X, Building2, Briefcase, FileCheck, ShieldCheck, Ghost, Clock, TrendingUp } from 'lucide-react';
 import apiClient from '../../api/client';
 
 import { getMe } from '../../api/auth';
@@ -147,6 +147,36 @@ export const CompanyList = () => {
                     Pending
                   </span>
                 )}
+              </div>
+
+              {/* Company Metrics Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 16, padding: 12, background: '#0d0d0d', borderRadius: 8, border: '1px solid #1f1f1f' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#737373', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
+                    <Ghost size={12} color="#f59e0b" /> Ghost Rate
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: company.ghosting_rate != null ? (company.ghosting_rate > 0.3 ? '#ef4444' : '#10b981') : '#a3a3a3' }}>
+                    {company.ghosting_rate != null ? `${company.ghosting_rate <= 1 ? Math.round(company.ghosting_rate * 100) : Math.round(company.ghosting_rate)}%` : 'N/A'}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center', borderLeft: '1px solid #1f1f1f', borderRight: '1px solid #1f1f1f' }}>
+                  <div style={{ fontSize: 11, color: '#737373', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
+                    <Clock size={12} color="#3b82f6" /> Response
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                    {company.median_response_hours != null ? `${company.median_response_hours}h` : 'N/A'}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#737373', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
+                    <TrendingUp size={12} color="#10b981" /> Offer Rate
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                    {company.interview_to_offer_rate != null ? `${company.interview_to_offer_rate <= 1 ? Math.round(company.interview_to_offer_rate * 100) : Math.round(company.interview_to_offer_rate)}%` : 'N/A'}
+                  </div>
+                </div>
               </div>
             </div>
 
