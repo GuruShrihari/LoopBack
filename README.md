@@ -1,6 +1,6 @@
 # LoopBack — A Different Approach to Job Hunting
 
-**Note:** I intentionally did not deploy LoopBack as a public-facing application because I didn't want to present a half-baked product as a finished one. Instead, I containerized the entire application with Docker Compose so it can be set up and evaluated locally with minimal configuration.
+**Note:** I intentionally did not deploy LoopBack as a public-facing application because I didn't want to present a half-baked product as a finished one. Instead, I containerized the entire application with Docker Compose so it can be set up and evaluated locally with minimal configuration. If you wanna know if i can deploy or not , you can check this repo out -[https://github.com/GuruShrihari/SnipUrl].
 
 LoopBack was built as my approach to the given challenge of creating a **one-stop platform for the modern job seeker**.
 
